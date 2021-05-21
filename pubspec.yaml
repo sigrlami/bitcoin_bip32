@@ -5,7 +5,7 @@ author: Harm Aarts <harm@aarts.email>
 homepage: https://github.com/haarts/bitcoin_bip32
 
 dependencies:
-    pointycastle: ^1.0.0
+    pointycastle: ^2.0.0
     base58check: ^1.0.1
     convert: ^2.1.0
 

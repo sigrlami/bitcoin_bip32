@@ -81,7 +81,7 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
       : _derivePublicMessage(parent.publicKey(), childNumber);
   var hash = hmacSha512(parent.chainCode, message);
 
-  var leftSide = utils.decodeBigInt(_leftFrom(hash));
+  var leftSide = utils.decodeBigIntWithSign(1, _leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
@@ -112,7 +112,7 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
   var message = _derivePublicMessage(parent, childNumber);
   var hash = hmacSha512(parent.chainCode, message);
 
-  var leftSide = utils.decodeBigInt(_leftFrom(hash));
+  var leftSide = utils.decodeBigIntWithSign(1, _leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
@@ -133,7 +133,7 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
 
 Uint8List _paddedEncodedBigInt(BigInt i) {
   var fullLength = Uint8List(lengthOfKey - 1);
-  var encodedBigInt = utils.encodeBigInt(i);
+  var encodedBigInt = utils.encodeBigIntAsUnsigned(i);
   fullLength.setAll(fullLength.length - encodedBigInt.length, encodedBigInt);
 
   return fullLength;
@@ -300,7 +300,7 @@ class ExtendedPrivateKey extends ExtendedKey {
   ExtendedPrivateKey.master(Uint8List seed)
       : super(version: privateKeyVersion) {
     var hash = hmacSha512(masterKey, seed);
-    key = utils.decodeBigInt(_leftFrom(hash));
+    key = utils.decodeBigIntWithSign(1, _leftFrom(hash));
     chainCode = _rightFrom(hash);
     depth = 0;
     childNumber = 0;
@@ -313,7 +313,7 @@ class ExtendedPrivateKey extends ExtendedKey {
       parentFingerprint: sublist(key, 5, 9),
       childNumber: ByteData.view(sublist(key, 9, 13).buffer).getInt32(0),
       chainCode: sublist(key, 13, 45),
-      key: utils.decodeBigInt(sublist(key, 46, 78)),
+      key: utils.decodeBigIntWithSign(1, sublist(key, 46, 78)),
     );
 
     if (!extendedPrivateKey.verifyChecksum(sublist(key, lengthOfSerializedKey,
@@ -418,3 +418,4 @@ void debug(List<int> payload) {
   print('key: ${payload.getRange(46, 78)}');
   print('checksum: ${payload.getRange(78, 82)}');
 }
+
