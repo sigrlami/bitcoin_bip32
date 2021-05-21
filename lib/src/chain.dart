@@ -11,7 +11,7 @@ import 'exceptions.dart';
 class Chain {
   /// Create a chain based on a hex seed.
   Chain.seed(String seed) {
-    Uint8List seedBytes = hex.decoder.convert(seed);
+    Uint8List seedBytes = hex.decoder.convert(seed) as Uint8List;
     root = ExtendedPrivateKey.master(seedBytes);
   }
 
@@ -25,7 +25,7 @@ class Chain {
   static const String _publicKeyPrefix = 'M';
 
   /// The root out of which all keys can be derived.
-  ExtendedKey root;
+  ExtendedKey? root;
 
   bool get isPrivate => root is ExtendedPrivateKey;
 
@@ -35,7 +35,7 @@ class Chain {
   /// 'M' for a public key. Hardened keys are indexed with a tick.
   /// Example: "m/100/1'".
   /// This is the first Hardened private extended key on depth 2.
-  ExtendedKey forPath(String path) {
+  ExtendedKey? forPath(String path) {
     _validatePath(path);
 
     var wantsPrivate = path[0] == _privateKeyPrefix;
@@ -45,7 +45,7 @@ class Chain {
       if (wantsPrivate) {
         return root;
       }
-      return root.publicKey();
+      return root!.publicKey();
     }
 
     dynamic derivationFunction = wantsPrivate

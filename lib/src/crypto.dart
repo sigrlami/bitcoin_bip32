@@ -47,17 +47,17 @@ const int firstHardenedChild = 0x80000000;
 
 /// The 4 version bytes for the private key serialization as defined in the
 /// BIP21 spec
-final Uint8List privateKeyVersion = hex.decode('0488ADE4');
+final Uint8List privateKeyVersion = hex.decode('0488ADE4') as Uint8List;
 
 /// The 4 version bytes for the public key serialization as defined in the
 /// BIP21 spec
-final Uint8List publicKeyVersion = hex.decode('0488B21E');
+final Uint8List publicKeyVersion = hex.decode('0488B21E') as Uint8List;
 
 /// From the BIP32 spec. Used when calculating the hmac of the seed
 final Uint8List masterKey = utf8.encoder.convert('Bitcoin seed');
 
 /// AKA 'point(k)' in the specification
-ECPoint publicKeyFor(BigInt d) {
+ECPoint? publicKeyFor(BigInt? d) {
   return ECPublicKey(curve.G * d, curve).Q;
 }
 
@@ -79,14 +79,14 @@ ExtendedPrivateKey deriveExtendedPrivateChildKey(
   var message = childNumber >= firstHardenedChild
       ? _derivePrivateMessage(parent, childNumber)
       : _derivePublicMessage(parent.publicKey(), childNumber);
-  var hash = hmacSha512(parent.chainCode, message);
+  var hash = hmacSha512(parent.chainCode!, message);
 
   var leftSide = utils.decodeBigIntWithSign(1, _leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
 
-  var childPrivateKey = (leftSide + parent.key) % curve.n;
+  var childPrivateKey = (leftSide + parent.key!) % curve.n;
   if (childPrivateKey == BigInt.zero) {
     throw KeyZero();
   }
@@ -110,14 +110,14 @@ ExtendedPublicKey deriveExtendedPublicChildKey(
   }
 
   var message = _derivePublicMessage(parent, childNumber);
-  var hash = hmacSha512(parent.chainCode, message);
+  var hash = hmacSha512(parent.chainCode!, message);
 
   var leftSide = utils.decodeBigIntWithSign(1, _leftFrom(hash));
   if (leftSide >= curve.n) {
     throw KeyBiggerThanOrder();
   }
 
-  var childPublicKey = publicKeyFor(leftSide) + parent.q;
+  var childPublicKey = (publicKeyFor(leftSide)! + parent.q)!;
   if (childPublicKey.isInfinity) {
     throw KeyInfinite();
   }
@@ -141,7 +141,7 @@ Uint8List _paddedEncodedBigInt(BigInt i) {
 
 Uint8List _derivePrivateMessage(ExtendedPrivateKey key, int childNumber) {
   var message = Uint8List(37)
-    ..setAll(1, _paddedEncodedBigInt(key.key))
+    ..setAll(1, _paddedEncodedBigInt(key.key!))
     ..setAll(33, serializeTo4bytes(childNumber));
 
   return message;
@@ -149,7 +149,7 @@ Uint8List _derivePrivateMessage(ExtendedPrivateKey key, int childNumber) {
 
 Uint8List _derivePublicMessage(ExtendedPublicKey key, int childNumber) {
   var message = Uint8List(37)
-    ..setAll(0, compressed(key.q))
+    ..setAll(0, compressed(key.q!))
     ..setAll(33, serializeTo4bytes(childNumber));
 
   return message;
@@ -199,7 +199,7 @@ Uint8List sublist(Uint8List list, int start, int end) {
 abstract class ExtendedKey {
   ExtendedKey({
     this.version,
-    this.depth,
+    required this.depth,
     this.childNumber,
     this.chainCode,
     this.parentFingerprint,
@@ -216,24 +216,24 @@ abstract class ExtendedKey {
     }
 
     if (equal(decodedKey.getRange(0, 4), privateKeyVersion)) {
-      return ExtendedPrivateKey.deserialize(decodedKey);
+      return ExtendedPrivateKey.deserialize(decodedKey as Uint8List);
     }
 
-    return ExtendedPublicKey.deserialize(decodedKey);
+    return ExtendedPublicKey.deserialize(decodedKey as Uint8List);
   }
 
   /// 32 bytes
-  Uint8List chainCode;
+  Uint8List? chainCode;
 
-  int childNumber;
+  int? childNumber;
 
   int depth;
 
   /// 4 bytes
-  final Uint8List version;
+  final Uint8List? version;
 
   /// 4 bytes
-  Uint8List parentFingerprint;
+  Uint8List? parentFingerprint;
 
   /// Returns the first 4 bytes of the hash160 compressed public key.
   Uint8List get fingerprint;
@@ -245,11 +245,11 @@ abstract class ExtendedKey {
 
   List<int> _serialize() {
     return [
-      ...version,
+      ...version!,
       depth,
-      ...parentFingerprint,
-      ...serializeTo4bytes(childNumber),
-      ...chainCode,
+      ...parentFingerprint!,
+      ...serializeTo4bytes(childNumber!),
+      ...chainCode!,
       ..._serializedKey()
     ];
   }
@@ -263,7 +263,7 @@ abstract class ExtendedKey {
 
   Iterable<int> _checksum() {
     return sha256digest
-        .process(sha256digest.process(Uint8List.fromList(_serialize())))
+        .process(sha256digest.process(Uint8List.fromList(_serialize() as List<int>)))
         .getRange(0, 4);
   }
 
@@ -273,7 +273,7 @@ abstract class ExtendedKey {
   String toString() {
     var payload = _serialize()..addAll(_checksum());
 
-    return Base58Codec(alphabet).encode(payload);
+    return Base58Codec(alphabet).encode(payload as List<int>);
   }
 }
 
@@ -286,10 +286,10 @@ abstract class ExtendedKey {
 class ExtendedPrivateKey extends ExtendedKey {
   ExtendedPrivateKey({
     this.key,
-    int depth,
-    int childNumber,
-    Uint8List chainCode,
-    Uint8List parentFingerprint,
+    required int depth,
+    int? childNumber,
+    Uint8List? chainCode,
+    Uint8List? parentFingerprint,
   }) : super(
             version: privateKeyVersion,
             depth: depth,
@@ -298,7 +298,7 @@ class ExtendedPrivateKey extends ExtendedKey {
             chainCode: chainCode);
 
   ExtendedPrivateKey.master(Uint8List seed)
-      : super(version: privateKeyVersion) {
+      : super(version: privateKeyVersion, depth: 0) {
     var hash = hmacSha512(masterKey, seed);
     key = utils.decodeBigIntWithSign(1, _leftFrom(hash));
     chainCode = _rightFrom(hash);
@@ -324,7 +324,7 @@ class ExtendedPrivateKey extends ExtendedKey {
     return extendedPrivateKey;
   }
 
-  BigInt key;
+  BigInt? key;
 
   @override
   ExtendedPublicKey publicKey() {
@@ -344,7 +344,7 @@ class ExtendedPrivateKey extends ExtendedKey {
   List<int> _serializedKey() {
     var serialization = Uint8List(lengthOfKey);
     serialization[0] = 0;
-    var encodedKey = _paddedEncodedBigInt(key);
+    var encodedKey = _paddedEncodedBigInt(key!);
     serialization.setAll(1, encodedKey);
 
     return serialization.toList();
@@ -385,11 +385,11 @@ class ExtendedPublicKey extends ExtendedKey {
     return extendedPublickey;
   }
 
-  ECPoint q;
+  ECPoint? q;
 
   @override
   Uint8List get fingerprint {
-    var identifier = hash160(compressed(q));
+    var identifier = hash160(compressed(q!));
     return Uint8List.view(identifier.buffer, 0, 4);
   }
 
@@ -400,10 +400,10 @@ class ExtendedPublicKey extends ExtendedKey {
 
   @override
   List<int> _serializedKey() {
-    return compressed(q).toList();
+    return compressed(q!).toList();
   }
 
-  static ECPoint _decodeCompressedECPoint(Uint8List encodedPoint) {
+  static ECPoint? _decodeCompressedECPoint(Uint8List encodedPoint) {
     return curve.curve.decodePoint(encodedPoint.toList());
   }
 }

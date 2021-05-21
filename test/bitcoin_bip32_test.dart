@@ -128,7 +128,7 @@ void main() {
     test('static vector', () {
       var chain = Chain.seed(vector['seed']);
       vector['chains'].forEach((child) {
-        ExtendedPrivateKey privateKey = chain.forPath(child['chain']);
+        ExtendedPrivateKey privateKey = chain.forPath(child['chain']) as ExtendedPrivateKey;
         expect(privateKey.toString(), child['privateKey']);
 
         var publicKey = privateKey.publicKey();
@@ -152,7 +152,7 @@ void main() {
     });
 
     group('path parser', () {
-      Chain chain;
+      late Chain chain;
 
       setUp(() {
         chain = Chain.seed('00');
@@ -252,7 +252,7 @@ void main() {
 
   test('refuse to generate a hardened child for a extended public key', () {
     ExtendedPublicKey parent =
-        ExtendedKey.deserialize(vector2['chains'][0]['publicKey']);
+        ExtendedKey.deserialize(vector2['chains'][0]['publicKey']) as ExtendedPublicKey;
 
     expect(() => deriveExtendedPublicChildKey(parent, firstHardenedChild),
         throwsA(TypeMatcher<InvalidChildNumber>()));
