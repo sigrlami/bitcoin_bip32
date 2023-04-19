@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
 
-import 'package:bitcoin_bip32/bitcoin_bip32.dart';
-import 'package:bitcoin_bip32/src/crypto.dart';
+import 'package:bitcoin_bip32_ng/bitcoin_bip32_ng.dart';
+import 'package:bitcoin_bip32_ng/src/crypto.dart';
 
 // ignore_for_file: omit_local_variable_types
 

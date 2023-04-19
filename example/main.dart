@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:convert/convert.dart';
-import 'package:bitcoin_bip32/bitcoin_bip32.dart';
+import 'package:bitcoin_bip32_ng/bitcoin_bip32_ng.dart';
 
 //ignore_for_file: avoid_print
 
